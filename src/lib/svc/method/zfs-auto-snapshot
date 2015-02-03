@@ -744,13 +744,13 @@ function take_backup { # filesystem backup-type label fmri
 	    print_note "Starting incr. ZFS send of differences between $PREV_SNAP and $LAST_SNAP."
 	    export LAST_SNAP
 	    export PREV_SNAP
-	    pfexec_zfs send -i "$PREV_SNAP" "$LAST_SNAP" | $BACKUP_SAVE_CMD
+	    eval "pfexec zfs send -I $PREV_SNAP $LAST_SNAP | $BACKUP_SAVE_CMD"
 	    check_failure $? "Error performing incremental backup of $dataset."
 	;;
 	"full")
 	    print_note "Starting ZFS send of $LAST_SNAP."
 	    export LAST_SNAP
-	    pfexec_zfs send "$LAST_SNAP" | $BACKUP_SAVE_CMD
+        eval "pfexec zfs send $LAST_SNAP | $BACKUP_SAVE_CMD"
 	    check_failure $? "Error performing full backup of $dataset."
 	;;
        esac

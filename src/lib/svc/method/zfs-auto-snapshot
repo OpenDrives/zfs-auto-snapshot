@@ -25,7 +25,7 @@
 # Use is subject to license terms.
 #
 
-# zfs-auto-snapshot changeset = ~ZFS_AUTO_SNAPSHOT_CHANGESET~
+# zfs-auto-snapshot changeset = 
 
 # This SMF method takes periodic snapshots of zfs filesystems, with
 # options to allow the user to keep a limited number of snapshots, snapshot
@@ -741,16 +741,21 @@ function take_backup { # filesystem backup-type label fmri
        # be attempted for other datasets in our list.
        case $BACKUP in
 	"incremental")
+	    set -o pipefail 
 	    print_note "Starting incr. ZFS send of differences between $PREV_SNAP and $LAST_SNAP."
 	    export LAST_SNAP
 	    export PREV_SNAP
-	    eval "pfexec zfs send -I $PREV_SNAP $LAST_SNAP | $BACKUP_SAVE_CMD"
+	    echo $BACKUP_SAVE_CMD 
+        	eval $BACKUP_SAVE_CMD
 	    check_failure $? "Error performing incremental backup of $dataset."
 	;;
 	"full")
+	    set -o pipefail 
 	    print_note "Starting ZFS send of $LAST_SNAP."
 	    export LAST_SNAP
-        eval "pfexec zfs send $LAST_SNAP | $BACKUP_SAVE_CMD"
+            echo $BACKUP_SAVE_CMD
+	    echo  ${PREV_SNAP:+-I $PREV_SNAP}
+        eval $BACKUP_SAVE_CMD
 	    check_failure $? "Error performing full backup of $dataset."
 	;;
        esac

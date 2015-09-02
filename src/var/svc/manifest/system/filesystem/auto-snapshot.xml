@@ -32,7 +32,7 @@
 <service
 	name='system/filesystem/zfs/auto-snapshot'
 	type='service'
-	version='0.12b'>
+	version='0.12c'>
 
 	<!-- we need to be multi-user  -->
 	<dependency

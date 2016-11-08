@@ -426,6 +426,24 @@ function take_snapshot {
 
 	typeset BACKUP=$backup
 
+	# Do not snapshot if there is a lock on this
+	# incremental backup.  Matching this test here
+	# causes both the snapshot and the backup - via take_backup
+	# to be suppressed until the next interval to try again.
+    typeset LOCK=$(svcprop -p zfs/backup-lock $FMRI)
+    if [ "$LOCK" != "unlocked" ]; then
+		print_log "Unable to snapshot $FILESYS: $LOCK."
+
+		if [ "$BACKUP" == "incremental" ]; then
+			print_log "Skipping snapshot for this interval of $FMRI."
+			print_log "Skips can be avoided by verifying backup interval is sufficient to transfer snapshot data."
+			return 0
+		else
+			print_log "Full snapshot not completed for $FMRI."
+			return 0
+		fi
+	fi
+
 	typeset STATE=0
 
 	# an identifier allows us to setup multiple snapshot schedules
@@ -666,6 +684,9 @@ function take_backup { # filesystem backup-type label fmri
     typeset LOCK=$(svcprop -p zfs/backup-lock $FMRI)
     if [ "$LOCK" != "unlocked" ]
     then
+	# when this check is matched in take_snapshot this section
+	# is not consulted.
+	#
 	# Unable to perform this backup due to an existing backup being
 	# executed for this dataset. This would result in moving the
 	# service to maintenance mode if we're doing incrementals, since
@@ -746,16 +767,16 @@ function take_backup { # filesystem backup-type label fmri
 	    export LAST_SNAP
 	    export PREV_SNAP
 	    echo $BACKUP_SAVE_CMD 
-        	eval $BACKUP_SAVE_CMD
+	    eval $BACKUP_SAVE_CMD
 	    check_failure $? "Error performing incremental backup of $dataset."
 	;;
 	"full")
 	    set -o pipefail 
 	    print_note "Starting ZFS send of $LAST_SNAP."
 	    export LAST_SNAP
-            echo $BACKUP_SAVE_CMD
-	    echo  ${PREV_SNAP:+-I $PREV_SNAP}
-        eval $BACKUP_SAVE_CMD
+	    echo $BACKUP_SAVE_CMD
+	    echo ${PREV_SNAP:+-I $PREV_SNAP}
+	    eval $BACKUP_SAVE_CMD
 	    check_failure $? "Error performing full backup of $dataset."
 	;;
        esac
